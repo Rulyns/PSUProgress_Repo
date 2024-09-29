@@ -27,6 +27,7 @@ def frequency(txt):
             chardict.update({x : (val + 1)})
     return chardict
 
+print("Newchange")
 
 
 def invert(d):
