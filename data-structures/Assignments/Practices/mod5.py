@@ -25,13 +25,13 @@ class LinkedList:
     __repr__=__str__
 
     def isEmpty(self):
-        return self.head==None
+        return self.head==None # if the head is empty, then the rest of the linked list must be empty
 
 
     def __len__(self):
         current=self.head
         count=0
-        while current is not None:
+        while current is not None: # Until it reaches the tail.next, which is None
             count += 1
             current = current.next    
         return count
@@ -49,7 +49,7 @@ class LinkedList:
 
     def __contains__(self,value):
         current=self.head
-        while current is not None:
+        while current is not None: # similar to __len__ method
             if current.value==value:
                 return True
             else:
