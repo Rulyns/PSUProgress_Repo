@@ -60,7 +60,7 @@ class Malloc_Library:
         >>> other_lst
         12 -> None -> None -> None -> None -> 56 -> None -> None -> 6925
         >>> temp = lst.head.next.next
-        >>> lst.free()
+        >>> lst.realloc(0)
         >>> temp.next is None
         True
     """
@@ -93,14 +93,14 @@ class Malloc_Library:
         # --- YOUR CODE STARTS HERE
         current = self.head
         count = 0
+        if pos > len(self):
+            raise IndexError()
         while current is not None:
-            if count < pos:
-                count += 1
-                current = current.next
-            elif count > pos:
-                raise IndexError("Index out of range")
-            else:
-                current = Node(value)
+            if count == pos:
+                current.value = value # set value at index
+            count += 1
+            current = current.next 
+                
         # pass  # remove when starting implementation 
 
 
@@ -108,55 +108,104 @@ class Malloc_Library:
         # --- YOUR CODE STARTS HERE
         current = self.head
         count = 0
-        while current is not None:
+        while current is not None: # runs through linked list
             if count < pos:
                 count += 1
                 current = current.next
             elif count > pos:
                 raise IndexError("Index out of range")
             else:
-                return current.value
+                return current.value # return value at index
         # pass  # remove when starting implementation 
     
 
     def malloc(self, size):
         # --- YOUR CODE STARTS HERE
-        current = self.head
-        noneNode = Node(None)
+        self.free() # resets all linked list connections
+        self.head = None # makes sure the self.head is reset as well
         count = 0
-        while count < size:
-            current = noneNode
-            current = current.next
-            count =+ 1
+        while count < size: # adds a none node according to size
+            noneNode = Node(None)
+            noneNode.next = self.head
+            self.head = noneNode
+            count += 1
         # pass  # remove when starting implementation 
 
 
     def calloc(self, size):
         # --- YOUR CODE STARTS HERE
-        current = self.head
-        zeroNode = Node(0)
+        self.free() # when called resets the linked list.
+        self.head = None # resets self.head as well
         count = 0
-        while count < size:
-            current = zeroNode
-            current = current.next
-            count =+ 1
+        while count < size: # adds zero nodes according to size
+            noneNode = Node(0)
+            noneNode.next = self.head
+            self.head = noneNode
+            count += 1
         # pass  # remove when starting implementation 
 
 
     def free(self):
         # --- YOUR CODE STARTS HERE
-        pass  # remove when starting implementation 
+        current = self.head
+        while current is not None:
+            temp = current
+            current = current.next
+            temp.next = None
+        # pass  # remove when starting implementation 
 
 
     def realloc(self, size):
         # --- YOUR CODE STARTS HERE
-        pass  # remove when starting implementation 
+        temp = None
+        if size == 0: # unallocate everything
+            self.free()
+        elif len(self) == 0: # create a linked list if realloc is called on an empty linked list
+            self.malloc(size)
+        elif size > len(self): # if the size is greater than the size of current linked list
+            count = 0
+            while count < (size - len(self)):
+                noneNode = Node(None)
+                noneNode.next = temp
+                temp = noneNode
+                count += 1
+            current = self.head
+            while current is not None:
+                previous = current
+                current = current.next
+            previous.next = temp
+        else: # if size is smaller than current linked list
+            current = self.head
+            count = 0
+            while current is not None:
+                temp = current
+                current = current.next
+                count += 1
+                if count >= size:
+                    temp.next = None
+        
+
+        # pass  # remove when starting implementation 
 
 
 
     def memcpy(self, ptr1_start_idx, pointer_2, ptr2_start_idx, size):
         # --- YOUR CODE STARTS HERE
-        pass  # remove when starting implementation 
+        
+        if ptr1_start_idx < len(self) and ptr2_start_idx < len(pointer_2):
+            if size > (len(self) - ptr1_start_idx): # set size what its supposed to be if its too large
+                size = (len(self) - ptr1_start_idx)
+            index2 = 0
+            index2 += ptr2_start_idx
+            index1 = 0
+            index1 += ptr1_start_idx
+            while size > 0:
+                pointer_2[index2] = self[index1] # uses both __getitem__ and __setitem__
+                index2 += 1
+                index1 += 1
+                size -= 1
+                
+        # pass  # remove when starting implementation 
     
 
 
@@ -166,4 +215,4 @@ def run_tests():
      
 
 if __name__ == "__main__":
-     run_tests()
+    run_tests()
