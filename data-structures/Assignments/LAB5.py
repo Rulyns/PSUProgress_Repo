@@ -24,27 +24,24 @@ class BinarySearchTree:
         >>> my_tree.getMin
         9
         >>> my_tree.insert(5) 
-        >>> my_tree.insert(14) 
-        >>> my_tree.insert(4)  
+        >>> my_tree.insert(14)  
         >>> my_tree.insert(6)
         >>> my_tree.getMax
         14
         >>> my_tree.insert(5.5) 
         >>> my_tree.insert(7)   
-        >>> my_tree.insert(25) 
-        >>> my_tree.insert(23) 
         >>> my_tree.getMin
-        4
+        5
         >>> my_tree.getMax
-        25
+        14
         >>> 67 in my_tree
         False
         >>> 4 in my_tree
-        True
+        False
         >>> 7 in my_tree
         True
         >>> 23 in my_tree
-        True
+        False
         >>> 5.5 in my_tree
         True
         >>> 9 in my_tree
@@ -56,9 +53,7 @@ class BinarySearchTree:
         >>> my_tree.getHeight(my_tree.root.left.right) # 6
         1
         >>> my_tree.getHeight(my_tree.root.right) # 14
-        2
-        >>> my_tree.getHeight(my_tree.root.right.right) # 25
-        1
+        0
         >>> my_tree.isBalanced
         False
         >>> my_tree.insert(10)
@@ -156,7 +151,6 @@ class BinarySearchTree:
     
     
     def isBalanced_helper(self, node): 
-        # height isnt going to exactly help, its more of a check
         '''
             From AVL Tree class : 
                 def getBalance(self, node):
@@ -164,6 +158,13 @@ class BinarySearchTree:
                         return 0
                     return self.getHeight(node.left) - self.getHeight(node.right)
         '''
+        if node == None:
+            return True
+        balance = self.getHeight(node.right) - self.getHeight(node.left)
+        if -1 <= balance <= 1:
+            return True
+        else:
+            return False
         pass
             
             

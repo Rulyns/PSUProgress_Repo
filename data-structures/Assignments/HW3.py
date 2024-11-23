@@ -1,6 +1,7 @@
 # HW3
 # REMINDER: The work in this assignment must be your own original work and must be completed alone.
 
+#NOTE: NOTICE!!!!! Exponentiation is still bugged, meaning that some calculations that require repeated exponents dont work yet. Aka 2^3^5
 class Node:
     def __init__(self, value):
         self.value = value  
@@ -76,7 +77,7 @@ class Stack:
 
     def isEmpty(self):
         # YOUR CODE STARTS HERE
-        return self.top is None
+        return self.top == None
         pass
 
     def __len__(self): #NOTE: Double check bugfix, but I thinks this is okay.
@@ -164,9 +165,90 @@ class Calculator:
         except: 
             return False
         pass
+    
+    def _isAllowed(self, txt):
+        '''
+            >>> x=Calculator()
+            >>> x._isAllowed(' 2 * ( 5 + 3 ) ^  2 + ) 1 + 4 (')
+            True
+            >>> x._isAllowed('( ( 2 ) )')
+            True
+            >>> x._isAllowed('2 * (( 5 +-3 ) ^ 2 + (1 + 4 ))')
+            True
+            >>> x._isAllowed('2 * + 4 - 5')
+            False
+            >>> x._isAllowed('2 -( -4 * 5) + 6')
+            True
+            >>> x._isAllowed('2*5.34+3^2+1+4')
+            True
+            >>> x._isAllowed('2 * 5 + 3 ^ + -2 + 1 + 4')
+            False
+            >>> x._isAllowed('     2 * 5 + 3  ^ * 2 + 1 + 4')
+            False
+            >>> x._isAllowed('2    5')
+            False
+            >>> x._isAllowed('25 +')
+            False
+            >>> x._isAllowed('2 *      5% + 3       ^ + -2 +1 +4')
+            False
+            >>> x._isAllowed('(2)-4')
+            True
+        '''
+        # This method checks for operators next to operators and digits next to digits, and if the expression ends in an operator. Also removes parenthesis, This is okay because there should still be operators in between parenthesis, like (5) + (5), so strings like (5) (5) would instead return False instead of true.
+        if isinstance(txt, str):
+            txt = txt.replace("-", " - ") 
+            txt = txt.replace("(", " ") # parenthesis removal
+            txt = txt.replace(")", " ") # parenthesis removal
+            txt = txt.replace("+", " + ")
+            txt = txt.replace("/", " / ")
+            txt = txt.replace("*", " * ")
+            txt = txt.replace("^", " ^ ")
+            txt = txt.split()
+            qualifiedOperations = ["^", "+", "/", "*"] #"-" not in here because its a special case
+            previous = ""
+            for x in range(1, len(txt)):
+                previous_minus = txt[x-1]
+                if previous_minus in qualifiedOperations and txt[x] is "-" and self._isNumber(txt[x+1]):
+                    txt[x] = txt[x] + txt[x+1]
+                    del txt[x+1]
+            for token in txt[:]:
+                if token in qualifiedOperations and previous in qualifiedOperations:
+                    return False
+                if self._isNumber(token) and self._isNumber(previous):
+                    return False
+                previous = token
+            if txt[-1] in qualifiedOperations:
+                return False
+            return True
 
-
-
+    def _isBalanced(self, txt):
+        '''
+            >>> x = Calculator()
+            >>> x._isBalanced(' 2 * ( 5 + 3 ) ^  2 + ) 1 + 4 (')
+            False
+            >>> x._isBalanced('2 * (           ( 5 +-3 ) ^ 2 + (1 + 4 ))')
+            True
+            
+        '''
+        # this function checks for the balancing of the parenthesis in the expression.
+        if isinstance(txt, str):
+            txt = txt.replace("-", " -") 
+            txt = txt.replace("(", " ( ")
+            txt = txt.replace(")", " ) ")
+            txt = txt.replace("+", " + ")
+            txt = txt.replace("/", " / ")
+            txt = txt.replace("*", " * ")
+            txt = txt.replace("^", " ^ ")
+            txt = txt.split()
+            parenthesis_count = 0
+            for token in txt[:]:
+                if token is "(":
+                    parenthesis_count += 1
+                if token is ")":
+                    parenthesis_count -= 1
+                if parenthesis_count < 0:
+                    return False
+            return parenthesis_count == 0
 
     def _getPostfix(self, txt):
         '''
@@ -194,28 +276,40 @@ class Calculator:
             '2.0 5.0 3.0 + 2.0 ^ 1.0 4.0 + + *'
             >>> x._getPostfix('2* (       -5 + 3 ) ^2+ ( 1 +4 )')
             '2.0 -5.0 3.0 + 2.0 ^ * 1.0 4.0 + +'
+            >>> x._getPostfix('-2 +          3.5')
+            '-2.0 3.5 +'
 
             # In invalid expressions, you might print an error message, adjust doctest accordingly
             # If you are veryfing the expression in calculate before passing to postfix, this cases are not necessary
 
             >>> x._getPostfix('2 * 5 + 3 ^ + -2 + 1 + 4')
+            False
             >>> x._getPostfix('     2 * 5 + 3  ^ * 2 + 1 + 4')
+            False
             >>> x._getPostfix('2    5')
+            False
             >>> x._getPostfix('25 +')
+            False
             >>> x._getPostfix(' 2 * ( 5      + 3 ) ^ 2 + ( 1 +4 ')
+            False
             >>> x._getPostfix(' 2 * ( 5 + 3 ) ^  2 + ) 1 + 4 (')
+            False
             >>> x._getPostfix('2 *      5% + 3       ^ + -2 +1 +4')
+            False
+            >>> x._getPostfix('2 *      $5 + 3       ^ + -$2 +1 +4')
+            False
+            >>> x._getPostfix("( -2/6) + ( 5$ *( 9.4 ))")
+            False
         '''
-
         # YOUR CODE STARTS HERE
         postfixStack = Stack()  # method must use postfixStack to compute the postfix expression
         postfixExpression = ""
-        qualifiedOperations = {"(": 0, ")" : 0, "+" : 1, "-": 1, "/" : 2, "*" : 2,"^" : 3} #"-" is a special case so most of the operations will be fine except for when we encounter a negative
+        qualifiedOperations = {"(": -1, "+" : 1, "-": 1, "/" : 2, "*" : 2,"^" : 3} #"-" is a special case so most of the operations will be fine except for when we encounter a negative
         #NOTE: Might have to change where this is, but check the string representation for where theres a random operator at the end of the inorder stack. There should never be something like that by the TOP of the stack, except for negative.
-        if len(txt) == 0:
+        if len(txt) == 0 or not self._isBalanced(txt) or not self._isAllowed(txt): # Both helper methods are called HERE to check viability.
             return False
         if isinstance(txt, str): #NOTE: Should be a string already
-            txt = txt.replace("-", " -") # Makes sure negatives arent connecting with other operators
+            txt = txt.replace("-", " - ") # Makes sure negatives arent connecting with other operators
             txt = txt.replace("(", " ( ")
             txt = txt.replace(")", " ) ")
             txt = txt.replace("+", " + ")
@@ -225,25 +319,43 @@ class Calculator:
             txt = txt.split() # Removes any trailing whitespace we began with (and added)
             #NOTE: Get rid of ALL unneccesary whitespace with this one, We wont need it for where we're going.
             #NOTE: txt is now a list you can iterate over, this is going to get pushed/popped into the stack until we get the postfix.
-            #NOTE: You've tried 6 types of logic, Now its time for the "bowl" method.
-            # Parenthesis is a special case, so we should simply push it first into the stack.
-            print(txt[:])
+            # Parenthesis is a special case, so we should simply push it first into the stack
+            for x in range(1, len(txt)):
+                previous = txt[x-1]
+                if previous in qualifiedOperations.keys() and txt[x] is "-" and self._isNumber(txt[x+1]):
+                    txt[x] = txt[x] + txt[x+1]
+                    del txt[x+1]
+                if previous == "-" and self._isNumber(txt[x]) and x == 1:
+                    txt[1] = "-"+txt[x]
+                    del txt[0]
+                    
             for token in txt[:]:
                 # Any token thats a number automatically goes into the postfix.
                 if self._isNumber(token):
                    postfixExpression += f"{float(token)} "
-                # Any token thats not an operand has to go Through a process where it 1. Checks the bowl for higher operations 2. Sees if the token can get added to the bowl. 3. What needs to be removed from the bowl in order for precidence to work.
-                if token in qualifiedOperations.keys() and postfixStack.isEmpty():
+                # Any token thats not an operand has to go Through a process where it 1. Checks the stack for higher operations 2. Sees if the token can get added to the stack. 3. What needs to be removed from the stack in order for precidence to work.
+                elif token in qualifiedOperations.keys() and postfixStack.isEmpty():
+                    # if token is an operator and the stack is empty
                     postfixStack.push(token)
                 elif token in qualifiedOperations.keys() and not postfixStack.isEmpty():
-                    while not postfixStack.isEmpty() and qualifiedOperations.get(token) <= qualifiedOperations.get(postfixStack.peek()):
+                    # is token is an operator and there are items in the stack
+                    while not postfixStack.isEmpty() and 0 < qualifiedOperations.get(token) <= qualifiedOperations.get(postfixStack.peek()):
+                        # while there are items in the stack, pop out any items that need to leave the stack in order for the new token to get placed into the stack
                         postfixExpression += f"{postfixStack.pop()} "
                     postfixStack.push(token)
-            postfixExpression += f"{postfixStack.pop()} "
-            print(f"Current Stack after operation: \n{postfixStack}")
-            print(postfixExpression)
+                    # ^ this push above me is for the token to finally go into the stack after all other operations have been done
+                elif token is ")":
+                    while postfixStack.peek() is not "(":
+                        # while there are items in the stack, pop out any items that need to leave the stack in order for the new token to get placed into the stack
+                        postfixExpression += f"{postfixStack.pop()} "
+                    postfixStack.pop()
+                else:
+                    return False
+            while not postfixStack.isEmpty():
+                    # add any straggling operations to the end of the stack.
+                    postfixExpression += f"{postfixStack.pop()} "
+            return postfixExpression.strip()
         pass
-
 
     @property
     def calculate(self):
@@ -267,6 +379,9 @@ class Calculator:
             >>> x.setExpr('2-3*4')
             >>> x.calculate
             -10.0
+            >>> x.setExpr('4-5^2-6-2')
+            >>> x.calculate
+            -29.0
             >>> x.setExpr('7^2^3')
             >>> x.calculate
             5764801.0
@@ -301,15 +416,38 @@ class Calculator:
             >>> x.calculate
             >>> x.setExpr("( -2/6) + ( 5 ( ( 9.4 )))") 
             >>> x.calculate
+            >>> x.setExpr("( -2/6) + ( 5$ *( 9.4 ))") 
+            >>> x.calculate
         '''
 
-        if not isinstance(self.__expr,str) or len(self.__expr)<=0:
-            print("Argument error in calculate")
+        if not isinstance(self.__expr,str) or len(self.__expr)<=0 or not self._getPostfix(self.__expr):
             return None
+        else:
+            qualifiedOperations = ["^", "+", "-", "/", "*"]
+            calcStack = Stack()   # method must use calcStack to compute the  expression
 
-        calcStack = Stack()   # method must use calcStack to compute the  expression
-
-        # YOUR CODE STARTS HERE
+            # YOUR CODE STARTS HERE
+            # calculates expressions based of pop, pop, push. 
+            PostExpression = self._getPostfix(self.getExpr)
+            PostList = PostExpression.split(" ")
+            for x in PostList:
+                if self._isNumber(x):
+                    calcStack.push(float(x))
+                elif x in qualifiedOperations:
+                    token1 = calcStack.pop()
+                    token2 = calcStack.pop()
+                    if x == "+":
+                        ans = token2 + token1
+                    elif x == "-":
+                        ans = token2 - token1
+                    elif x == "*":
+                        ans = token2 * token1
+                    elif x == "/":
+                        ans = token2 / token1
+                    elif x == "^":
+                        ans = token2 ** token1
+                    calcStack.push(float(ans))
+            return calcStack.peek()
         pass
 
 #=============================================== Part III ==============================================
@@ -370,6 +508,8 @@ class AdvancedCalculator:
             False
         '''
         # YOUR CODE STARTS HERE
+        # checks if the first char is part of alphabet and not a number, the rest can be alphabet or a number.
+        return str.isalpha(word[0]) and str.isalnum(word)
         pass
        
 
@@ -386,6 +526,18 @@ class AdvancedCalculator:
             '28.0 - 23.0'
         '''
         # YOUR CODE STARTS HERE
+        if not isinstance(expr, str):
+            return None
+        checkexpr = expr.split()
+        rtnexpr = ""
+        for x in checkexpr[:]:
+            if self._isVariable(f'{x}') and x not in self.states.keys():
+                return None
+            elif x in self.states.keys():
+                rtnexpr += f"{self.states.get(x)} "
+            else:
+                rtnexpr += f"{x} "
+        return rtnexpr.strip()
         pass
 
     
@@ -393,6 +545,28 @@ class AdvancedCalculator:
         self.states = {} 
         calcObj = Calculator()     # method must use calcObj to compute each expression
         # YOUR CODE STARTS HERE
+        expression_dict = {}
+        expressionlst = self.expressions.split(";")
+        for expression in expressionlst[:]:
+            tokens = expression.split("=")
+            if expression[0:6].lower() == "return":
+                tokens = expression.split(" ", 1) # splits only once for return, since the expression isnt return = expression
+            if tokens[0].lower() == "return":
+                # only for return
+                calcObj.setExpr(self._replaceVariables(tokens[1].strip()))
+                expression_dict.update({"_return_": calcObj.calculate})
+            elif self._isVariable(tokens[0].strip()) and tokens[0] != "return":
+                # specifically only for expressions that arent the return statement.
+                calcObj.setExpr(self._replaceVariables(tokens[1].strip()))
+                self.states.update({tokens[0].strip(): calcObj.calculate})
+            else:
+                # wipe states and return none in case of error
+                self.states = {} 
+                return None
+            dict_snapshot = dict(self.states)
+            if not expression.startswith("return"):
+                expression_dict.update({expression: dict_snapshot})
+        return expression_dict
         pass
 
 
@@ -403,7 +577,7 @@ def run_tests():
     #doctest.testmod(verbose=True)
     
     # Run tests per function - Uncomment the next line to run doctest by function. Replace Stack with the name of the function you want to test
-    doctest.run_docstring_examples(Calculator._getPostfix, globals(), name='HW3',verbose=True)   
+    doctest.run_docstring_examples(Calculator.calculate, globals(), name='HW3',verbose=True)   
 
 if __name__ == "__main__":
     run_tests()
